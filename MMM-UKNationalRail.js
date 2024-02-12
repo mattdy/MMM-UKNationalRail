@@ -19,7 +19,7 @@ Module.register("MMM-UKNationalRail", {
     station: "", // CRS code for station
     token: "", // API token from http://realtime.nationalrail.co.uk/OpenLDBWSRegistration
 
-    filterDestination: "", // CRS code for station - only display departures calling here
+    filterDestination: [], // CRS code for station - only display departures calling here
     filterCancelled: false, // Filter out cancelled departures
 
     fetchRows: 20, // Maximum number of results to fetch (pre-filtering)
@@ -52,7 +52,17 @@ Module.register("MMM-UKNationalRail", {
     this.trains = {};
     this.loaded = false;
 
-    this.sendSocketNotification("UKNR_CONFIG", this.config);
+    // convert string into array for backwards compatibility
+    if (typeof this.config.filterDestination === 'string') {
+      this.config.filterDestination = [this.config.filterDestination]
+    }
+
+    const payload = {
+      id: this.identifier,
+      config: this.config
+    }
+
+    this.sendSocketNotification("UKNR_CONFIG", payload);
 
     // Initial start up delay via a timeout
     this.updateTimer = setTimeout(() => {
@@ -68,7 +78,7 @@ Module.register("MMM-UKNationalRail", {
   // Trigger an update of our train data
   fetchTrainInfo: function () {
     if (!this.hidden) {
-      this.sendSocketNotification("UKNR_TRAININFO", {});
+      this.sendSocketNotification("UKNR_TRAININFO", { id: this.identifier });
     }
   },
 
@@ -134,6 +144,35 @@ Module.register("MMM-UKNationalRail", {
     return wrapper;
   },
 
+
+  calculateDuration: function (startTime, endTime) {
+
+    try {
+      // Parse the start and end times
+      const [startHours, startMinutes] = startTime.split(":").map(Number);
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+
+      // Create Date objects for both times on the same (current) day
+      const startDate = new Date();
+      startDate.setHours(startHours, startMinutes, 0, 0); // Reset seconds and milliseconds for accuracy
+
+      const endDate = new Date();
+      endDate.setHours(endHours, endMinutes, 0, 0);
+
+      // Calculate the difference in milliseconds
+      const difference = endDate - startDate;
+
+      // Convert milliseconds to minutes
+      const durationInMinutes = Math.floor(difference / 60000);
+
+      return durationInMinutes;
+    } catch (error) {
+      return '?'
+    }
+
+  },
+
+
   /* processTrains(data)
    * Build a list of trains from our received data feed, taking in to account our filters
    */
@@ -143,6 +182,15 @@ Module.register("MMM-UKNationalRail", {
     }
 
     this.trains = [];
+    const { filterDestination } = this.config
+
+
+
+    if (filterDestination.length) {
+      data = data.filter(entry => {
+        return entry.subsequentCallingPoints.some(cp => filterDestination.find(fd => fd === cp.crs))
+      })
+    }
 
     for (var entry in data) {
       // Stop processing if we've already reached the right number of rows to display
@@ -152,6 +200,29 @@ Module.register("MMM-UKNationalRail", {
 
       var train = data[entry];
       var status = "";
+      var etd = train.etd.split(':').length === 2 ? train.etd : train.std
+      var eta = ''
+      var duration = '?'
+
+      if (filterDestination.length) {
+
+        // finds the calling point on route which matches the first destination station
+        const callingPoint = train.subsequentCallingPoints.find(cp => filterDestination.some(fd => fd === cp.crs))
+        if (callingPoint) {
+          if (callingPoint.et === 'On time') {
+            // if the train is on time we use the scheduled time
+            eta = callingPoint.st
+          } else if (callingPoint.et.split(':').length === 2) {
+            // if the train is delayed we check to see if the train has an estimated time
+            eta = callingPoint.et
+          }
+          if (eta) {
+            duration = this.calculateDuration(etd, eta)
+          }
+        }
+
+
+      }
 
       // Run filters first
       if (train.etd === "Cancelled" && this.config.filterCancelled === true) {
@@ -176,7 +247,9 @@ Module.register("MMM-UKNationalRail", {
         origin: train.origin.name,
         dep_scheduled: train.std,
         dep_estimated: train.etd,
-        status: status
+        status: status,
+        eta,
+        duration
       });
     }
 
@@ -186,9 +259,10 @@ Module.register("MMM-UKNationalRail", {
 
   // Process data returned
   socketNotificationReceived: function (notification, payload) {
+    if (payload.id !== this.identifier) return;
     switch (notification) {
       case "UKNR_DATA":
-        this.processTrains(payload.trainServices);
+        this.processTrains(payload.result.trainServices);
         break;
     }
   }

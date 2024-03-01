@@ -43,7 +43,7 @@ module.exports = NodeHelper.create({
       options,
       function (error, result) {
         Log.info("Return from getDepartureBoard: " + error + " - " + result);
-        const newResult = { result, id }
+        const newResult = { result, id };
 
         if (!error) {
           self.sendSocketNotification("UKNR_DATA", newResult);
@@ -63,15 +63,15 @@ module.exports = NodeHelper.create({
         Log.info("MMM-UKNationalRail received configuration");
         this.config[payload.id] = payload.config;
 
-        const config = this.config[payload.id]
+        const config = this.config[payload.id];
 
         // if the filter destination is not defined ignore
         if (config.filterDestination.length === 1) {
           // if there is only one filter destination keep it
-          config.filterDestination = config.filterDestination[0]
+          config.filterDestination = config.filterDestination[0];
         } else {
           // otherwise remove it and handle the multiple filter destinations on the response
-          delete config.filterDestination
+          delete config.filterDestination;
         }
 
         this.rail = new Rail(this.config[payload.id].token);

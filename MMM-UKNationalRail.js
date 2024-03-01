@@ -53,14 +53,14 @@ Module.register("MMM-UKNationalRail", {
     this.loaded = false;
 
     // convert string into array for backwards compatibility
-    if (typeof this.config.filterDestination === 'string') {
-      this.config.filterDestination = [this.config.filterDestination]
+    if (typeof this.config.filterDestination === "string") {
+      this.config.filterDestination = [this.config.filterDestination];
     }
 
     const payload = {
       id: this.identifier,
       config: this.config
-    }
+    };
 
     this.sendSocketNotification("UKNR_CONFIG", payload);
 
@@ -144,9 +144,7 @@ Module.register("MMM-UKNationalRail", {
     return wrapper;
   },
 
-
   calculateDuration: function (startTime, endTime) {
-
     try {
       // Parse the start and end times
       const [startHours, startMinutes] = startTime.split(":").map(Number);
@@ -167,11 +165,9 @@ Module.register("MMM-UKNationalRail", {
 
       return durationInMinutes;
     } catch (error) {
-      return '?'
+      return "?";
     }
-
   },
-
 
   /* processTrains(data)
    * Build a list of trains from our received data feed, taking in to account our filters
@@ -182,14 +178,14 @@ Module.register("MMM-UKNationalRail", {
     }
 
     this.trains = [];
-    const { filterDestination } = this.config
-
-
+    const { filterDestination } = this.config;
 
     if (filterDestination.length) {
-      data = data.filter(entry => {
-        return entry.subsequentCallingPoints.some(cp => filterDestination.find(fd => fd === cp.crs))
-      })
+      data = data.filter((entry) => {
+        return entry.subsequentCallingPoints.some((cp) =>
+          filterDestination.find((fd) => fd === cp.crs)
+        );
+      });
     }
 
     for (var entry in data) {
@@ -200,28 +196,27 @@ Module.register("MMM-UKNationalRail", {
 
       var train = data[entry];
       var status = "";
-      var etd = train.etd.split(':').length === 2 ? train.etd : train.std
-      var eta = ''
-      var duration = '?'
+      var etd = train.etd.split(":").length === 2 ? train.etd : train.std;
+      var eta = "";
+      var duration = "?";
 
       if (filterDestination.length) {
-
         // finds the calling point on route which matches the first destination station
-        const callingPoint = train.subsequentCallingPoints.find(cp => filterDestination.some(fd => fd === cp.crs))
+        const callingPoint = train.subsequentCallingPoints.find((cp) =>
+          filterDestination.some((fd) => fd === cp.crs)
+        );
         if (callingPoint) {
-          if (callingPoint.et === 'On time') {
+          if (callingPoint.et === "On time") {
             // if the train is on time we use the scheduled time
-            eta = callingPoint.st
-          } else if (callingPoint.et.split(':').length === 2) {
+            eta = callingPoint.st;
+          } else if (callingPoint.et.split(":").length === 2) {
             // if the train is delayed we check to see if the train has an estimated time
-            eta = callingPoint.et
+            eta = callingPoint.et;
           }
           if (eta) {
-            duration = this.calculateDuration(etd, eta)
+            duration = this.calculateDuration(etd, eta);
           }
         }
-
-
       }
 
       // Run filters first

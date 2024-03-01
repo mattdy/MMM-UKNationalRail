@@ -63,7 +63,7 @@ You can configure the columns to display using the `columns` configuration optio
 | `dep_scheduled` | The scheduled departure time for this train                                                                               |
 | `dep_estimated` | The estimated departure time for this train                                                                               |
 | `eta`           | The estimated arrival time for this train at the first destination as set in filterDestination                            |
-| `duration`      | The estimated duration for this train between the origin and the first destination as set in the filterDestination         |
+| `duration`      | The estimated duration for this train between the origin and the first destination as set in the filterDestination        |
 
 ## OpenLDBWS Token
 

@@ -18,11 +18,11 @@ module.exports = NodeHelper.create({
     Log.info("MMM-UKNationalRail helper started");
 
     this.started = false;
-    this.config = null;
+    this.config = {};
     this.rail = null;
   },
 
-  getTimetable: function () {
+  getTimetable: function (id) {
     var self = this;
 
     if (this.rail === null) {
@@ -31,40 +31,53 @@ module.exports = NodeHelper.create({
 
     var options = {};
 
-    options.rows = this.config.fetchRows;
+    options.rows = this.config[id].fetchRows;
 
-    if (this.config.filterDestination !== "") {
-      options.destination = this.config.filterDestination;
+    if (this.config[id].filterDestination) {
+      options.destination = this.config[id].filterDestination;
     }
 
     Log.info("Sending request for departure board information");
-    this.rail.getDepartureBoard(
-      this.config.station,
+    this.rail.getDepartureBoardWithDetails(
+      this.config[id].station,
       options,
       function (error, result) {
         Log.info("Return from getDepartureBoard: " + error + " - " + result);
+        const newResult = { result, id }
 
         if (!error) {
-          self.sendSocketNotification("UKNR_DATA", result);
+          self.sendSocketNotification("UKNR_DATA", newResult);
         }
       }
     );
   },
 
   socketNotificationReceived: function (notification, payload) {
+    Log.info("socketNotificationReceived");
     switch (notification) {
       case "UKNR_TRAININFO":
-        this.getTimetable();
+        this.getTimetable(payload.id);
         break;
 
       case "UKNR_CONFIG":
         Log.info("MMM-UKNationalRail received configuration");
-        this.config = payload;
+        this.config[payload.id] = payload.config;
 
-        this.rail = new Rail(this.config.token);
+        const config = this.config[payload.id]
+
+        // if the filter destination is not defined ignore
+        if (config.filterDestination.length === 1) {
+          // if there is only one filter destination keep it
+          config.filterDestination = config.filterDestination[0]
+        } else {
+          // otherwise remove it and handle the multiple filter destinations on the response
+          delete config.filterDestination
+        }
+
+        this.rail = new Rail(this.config[payload.id].token);
 
         this.sendSocketNotification("UKNR_STARTED", true);
-        this.getTimetable();
+        this.getTimetable(payload.id);
         this.started = true;
     }
   }

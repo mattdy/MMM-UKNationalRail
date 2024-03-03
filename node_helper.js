@@ -63,7 +63,7 @@ module.exports = NodeHelper.create({
         Log.info("MMM-UKNationalRail received configuration");
         this.config[payload.id] = payload.config;
 
-        const config = this.config[payload.id];
+        var config = this.config[payload.id];
 
         // if the filter destination is not defined ignore
         if (config.filterDestination.length === 1) {

@@ -21,6 +21,7 @@ Module.register("MMM-UKNationalRail", {
 
     filterDestination: [], // CRS code for station - only display departures calling here
     filterCancelled: false, // Filter out cancelled departures
+    filterFirstStop: [], // Filter for trains whose first stop is listed
 
     fetchRows: 20, // Maximum number of results to fetch (pre-filtering)
     displayRows: 10, // Maximum number of results to display (post-filtering)
@@ -179,6 +180,7 @@ Module.register("MMM-UKNationalRail", {
 
     this.trains = [];
     const { filterDestination } = this.config;
+    const { filterFirstStop } = this.config;
 
     if (filterDestination.length) {
       data = data.filter((entry) => {
@@ -187,6 +189,15 @@ Module.register("MMM-UKNationalRail", {
         );
       });
     }
+
+
+    if (filterFirstStop.length) {
+      data = data.filter((entry) => {
+        const firstCallingPoint = entry.subsequentCallingPoints[0];
+        return firstCallingPoint && filterFirstStop.includes(firstCallingPoint.crs);
+      });
+    }
+
 
     for (var entry in data) {
       // Stop processing if we've already reached the right number of rows to display
@@ -243,6 +254,7 @@ Module.register("MMM-UKNationalRail", {
         dep_scheduled: train.std,
         dep_estimated: train.etd,
         status: status,
+        first_stop: train.subsequentCallingPoints[0].locationName,
         eta,
         duration
       });

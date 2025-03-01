@@ -45,6 +45,7 @@ This module does support multiple instances, you can add as many entries for as 
 | `columns`           | Optional     | Array. A list of columns that you wish to display. A list of these and their contents is given below                                                      |
 | `filterDestination` | Optional     | String or Array. The CRS format code of a station, only departures that call here will be shown                                                           |
 | `filterCancelled`   | Optional     | Boolean. Whether or not to filter out cancelled trains                                                                                                    |
+| `filterFirstStop`   | Optional     | Array. CRS codes to filter for - only trains whose FIRST calling point matches - useful for excluding stopping services, for example                                                                                                     |
 | `fetchRows`         | Optional     | Integer. The number of results to fetch in the OpenLDBWS query, before filtering (other than destination filtering, which is applied to the query itself) |
 | `displayRows`       | Optional     | Integer. The maximum number of results to display from the query result.                                                                                  |
 
@@ -64,6 +65,7 @@ You can configure the columns to display using the `columns` configuration optio
 | `dep_estimated` | The estimated departure time for this train                                                                               |
 | `eta`           | The estimated arrival time for this train at the first destination as set in filterDestination                            |
 | `duration`      | The estimated duration for this train between the origin and the first destination as set in the filterDestination        |
+| `first_stop`      | The name of first calling point for the train        |
 
 ## OpenLDBWS Token
 

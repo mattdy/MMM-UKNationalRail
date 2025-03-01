@@ -190,14 +190,14 @@ Module.register("MMM-UKNationalRail", {
       });
     }
 
-
     if (filterFirstStop.length) {
       data = data.filter((entry) => {
         const firstCallingPoint = entry.subsequentCallingPoints[0];
-        return firstCallingPoint && filterFirstStop.includes(firstCallingPoint.crs);
+        return (
+          firstCallingPoint && filterFirstStop.includes(firstCallingPoint.crs)
+        );
       });
     }
-
 
     for (var entry in data) {
       // Stop processing if we've already reached the right number of rows to display
